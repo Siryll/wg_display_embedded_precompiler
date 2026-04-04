@@ -14,5 +14,5 @@ cargo build --release
 
 Precompile WASM Component
 ```bash
-./target/release/wasm-precompiler widget.component.wasm widget.compiled
+./target/release/wg-display-embedded-precompiler widget.component.wasm widget.compiled
 ```

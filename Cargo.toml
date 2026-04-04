@@ -1,8 +1,8 @@
 [package]
 name = "wg-display-embedded-precompiler"
-version = "0.1.0"
-edition = "2021"
+version = "1.0.0"
+edition = "2024"
 
 [dependencies]
-wasmtime = { version = "42.0.1", features = ["pulley", "component-model"] }
+wasmtime = { version = "43.0.0" }
 anyhow = "1.0.102"
