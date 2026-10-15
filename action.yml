@@ -1,0 +1,62 @@
+name: Build WG Display widget
+description: >
+  Builds a widget crate, turns it into a component, precompiles it for the WG Display firmware
+  and optionally uploads widget.precompiled.wasm to the GitHub release of the current tag.
+
+inputs:
+  widget-dir:
+    description: Directory of the widget crate, relative to the repository root. Its library must be named `widget`.
+    default: widget
+  use-wasm-opt:
+    description: Run wasm-opt to reduce the size.
+    default: "true"
+  release:
+    description: Upload widget.precompiled.wasm to the release of the current tag, creating it if needed.
+    default: "true"
+  github-token:
+    description: Token used to create the release.
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install tools
+      shell: bash
+      run: |
+        rustup target add wasm32-unknown-unknown
+        cargo install wasm-tools --locked
+        if [ "${{ inputs.use-wasm-opt }}" = "true" ]; then
+          sudo apt-get update && sudo apt-get install -y binaryen
+        fi
+
+    - name: Build widget
+      shell: bash
+      working-directory: ${{ inputs.widget-dir }}
+      run: |
+        cargo build --target wasm32-unknown-unknown --release
+        wasm-tools strip target/wasm32-unknown-unknown/release/widget.wasm -o widget.core.wasm
+        if [ "${{ inputs.use-wasm-opt }}" = "true" ]; then
+          wasm-opt -Oz --enable-bulk-memory --enable-sign-ext widget.core.wasm -o widget.core.wasm
+        fi
+        wasm-tools component new widget.core.wasm -o widget.component.wasm
+
+    # The precompiler is built from the same ref as this action, so the action version selects the firmware it targets.
+    - name: Build precompiler
+      shell: bash
+      run: cargo build --release --manifest-path "${{ github.action_path }}/Cargo.toml"
+
+    - name: Precompile widget
+      shell: bash
+      run: |
+        "${{ github.action_path }}/target/release/wg-display-embedded-precompiler" \
+          "${{ inputs.widget-dir }}/widget.component.wasm" widget.precompiled.wasm
+
+    - name: Upload to release
+      if: ${{ inputs.release == 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+        gh release upload "$GITHUB_REF_NAME" widget.precompiled.wasm --clobber

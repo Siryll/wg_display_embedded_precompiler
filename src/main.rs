@@ -2,8 +2,7 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 use wasmtime::*;
 
-// Precompile WASM components to run on the ESP32-S3
-// Used by the wg_display_embedded_widget template to precompile and automatically provide a built binary via github actions
+// Precompile WASM components for the pulley interpreter
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
@@ -16,15 +15,16 @@ fn main() -> Result<()> {
     let input = PathBuf::from(&args[1]);
     let output = PathBuf::from(&args[2]);
 
-    println!("╔════════════════════════════════════════════════════════╗");
-    println!("║  ESP32 WASM Precompiler (Wasmtime 41.0.2 + Pulley)    ║");
-    println!("╚════════════════════════════════════════════════════════╝");
+    println!("╔═════════════════════════════════════════════╗");
+    println!("║  ESP32 WASM Precompiler (Wasmtime + Pulley) ║");
+    println!("╚═════════════════════════════════════════════╝");
     println!();
     println!("Input:  {}", input.display());
     println!("Output: {}", output.display());
     println!();
 
-    // Settings must match those in wg_display_embedded/embedded_app/src/runtime/mod.rs
+    // Settings must match those in wg_display_embedded_multi/shared/src/runtime/mod.rs,
+    // precompiled code built with different settings is rejected.
     let mut config = Config::new();
     
     // Use the pulley32 target since this is the only supported no_std target
@@ -47,6 +47,8 @@ fn main() -> Result<()> {
     config.memory_guard_size(0);
     config.memory_init_cow(false);
     config.concurrency_support(false);
+    // the firmware limits the instructions a widget may run per call
+    config.consume_fuel(true);
 
     println!("Creating Wasmtime engine with ESP32-compatible config...");
     println!("  Target: pulley32 (32-bit little-endian for ESP32-S3)");
