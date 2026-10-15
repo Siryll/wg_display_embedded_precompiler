@@ -3,6 +3,9 @@ Precompiler and GitHub Action to build widgets for the [WG Display embedded port
 
 RISV-32 is not supported by Cranelift, so widgets are precompiled with Wasmtime for the `pulley32` target.
 
+> [!NOTE]
+> Old version of this pre-compiler for the legacy version of the [WG-Display-Embedded](https://github.com/Siryll/wg_display_embedded) project was moved to the [legacy](https://github.com/Siryll/wg_display_embedded_precompiler/tree/legacy) branch.
+
 ## Use as GitHub Action
 
 In the widget repository (see [wg_display_embedded_widget_template](https://github.com/Siryll/wg_display_embedded_widget_template)):
